@@ -14,7 +14,7 @@ npm run dev
 
 ### Actions Development
 
-1. See [Jupiter Swap Action example](examples/jupiter-swap/route.ts)
+1. See [Everstake Stake Action example](actions/everstake/route.ts)
 2. Build your own action 
    * Use specified openapi `responses` from [openapi.ts](examples/openapi.ts) for your POST, GET methods
    * Use specified openapi `body` from [openapi.ts](examples/openapi.ts) for your POST methods
@@ -26,7 +26,7 @@ Open [http://localhost:3000/swagger-ui](http://localhost:3000/swagger-ui) with y
 ### Unfurl action into a Blink
 To check and unfurl your or existing action open 
 [https://actions.dialect.to/](https://actions.dialect.to/)  
-e.g action for swap on Jupiter: <localhost:3000/api/jupiter/swap/SOL-Bonk>
+e.g action for swap on Jupiter: <localhost:3000/api/everstake/stake>
 
 ## Learn More
 To learn more about Hono, take a look at the following resources:
