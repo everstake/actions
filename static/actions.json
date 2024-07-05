@@ -1,0 +1,12 @@
+{
+    "rules": [
+        {
+            "pathPattern": "/*",
+            "apiPath": "/api/everstake/*"
+        },
+        {
+            "pathPattern": "/api/everstake/**",
+            "apiPath": "/api/everstake/**"
+        }
+    ]
+}

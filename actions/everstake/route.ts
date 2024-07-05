@@ -1,8 +1,12 @@
 import {
   LAMPORTS_PER_SOL,
   PublicKey,
-  SystemProgram,
   VersionedTransaction,
+  StakeProgram,
+  Keypair,
+  Transaction,
+  Authorized,
+  ComputeBudgetProgram
 } from '@solana/web3.js';
 import { createRoute, OpenAPIHono, z } from '@hono/zod-openapi';
 import {
@@ -12,11 +16,13 @@ import {
 } from '../openapi';
 import { prepareTransaction } from '../../shared/transaction-utils';
 import { ActionGetResponse, ActionPostRequest, ActionPostResponse } from '@solana/actions';
+import { connection } from '../../shared/connection';
+require('dotenv').config();
 
-const DONATION_DESTINATION_WALLET =
-  '3h4AtoLTh3bWwaLhdtgQtcC3a3Tokb8NJbtqR9rhp7p6';
-const DONATION_AMOUNT_SOL_OPTIONS = [1, 5, 10];
-const DEFAULT_DONATION_AMOUNT_SOL = 1;
+const VALIDATOR_ADDRESS = '9QU2QSxhb24FUX3Tu2FpczXjpK3VYrvRudywSZaM29mF';
+const VALIDATOR_ADDRESS_DEVNET ='FwR3PbjS5iyqzLiLugrBqKSa5EKZ4vK9SKs7eQXtT59f';
+const STAKE_AMOUNT_SOL_OPTIONS = [1, 5, 10];
+const DEFAULT_STAKE_AMOUNT_SOL = 1;
 
 const app = new OpenAPIHono();
 
@@ -24,26 +30,27 @@ app.openapi(
   createRoute({
     method: 'get',
     path: '/',
-    tags: ['Donate'],
+    tags: ['Stake'],
     responses: actionsSpecOpenApiGetResponse,
   }),
-  (c) => {
-    const { icon, title, description } = getDonateInfo();
+  (c) => {  
+    const requestUrl = new URL(c.req.url);
+    const { icon, title, description } = getStakeInfo(requestUrl.origin);
     const amountParameterName = 'amount';
     const response: ActionGetResponse = {
       icon,
-      label: `${DEFAULT_DONATION_AMOUNT_SOL} SOL`,
+      label: `${DEFAULT_STAKE_AMOUNT_SOL} SOL`,
       title,
       description,
       links: {
         actions: [
-          ...DONATION_AMOUNT_SOL_OPTIONS.map((amount) => ({
+          ...STAKE_AMOUNT_SOL_OPTIONS.map((amount) => ({
             label: `${amount} SOL`,
-            href: `/api/donate/${amount}`,
+            href: `/api/everstake/stake/${amount}`,
           })),
           {
-            href: `/api/donate/{${amountParameterName}}`,
-            label: 'Donate',
+            href: `/api/everstake/stake/{${amountParameterName}}`,
+            label: 'Stake',
             parameters: [
               {
                 name: amountParameterName,
@@ -63,7 +70,7 @@ app.openapi(
   createRoute({
     method: 'get',
     path: '/{amount}',
-    tags: ['Donate'],
+    tags: ['Stake'],
     request: {
       params: z.object({
         amount: z.string().openapi({
@@ -80,7 +87,8 @@ app.openapi(
   }),
   (c) => {
     const amount = c.req.param('amount');
-    const { icon, title, description } = getDonateInfo();
+    const requestUrl = new URL(c.req.url);
+    const { icon, title, description } = getStakeInfo(requestUrl.origin);
     const response: ActionGetResponse = {
       icon,
       label: `${amount} SOL`,
@@ -95,7 +103,7 @@ app.openapi(
   createRoute({
     method: 'post',
     path: '/{amount}',
-    tags: ['Donate'],
+    tags: ['Stake'],
     request: {
       params: z.object({
         amount: z
@@ -117,13 +125,18 @@ app.openapi(
   }),
   async (c) => {
     const amount =
-      c.req.param('amount') ?? DEFAULT_DONATION_AMOUNT_SOL.toString();
+      c.req.param('amount') ?? DEFAULT_STAKE_AMOUNT_SOL.toString();
     const { account } = (await c.req.json()) as ActionPostRequest;
 
+    let validator_address = VALIDATOR_ADDRESS;
+    if (process.env.ENVIRONMENT === 'development') {
+      validator_address = VALIDATOR_ADDRESS_DEVNET;
+    }
+
     const parsedAmount = parseFloat(amount);
-    const transaction = await prepareDonateTransaction(
+    const transaction = await prepareStakeTransaction(
       new PublicKey(account),
-      new PublicKey(DONATION_DESTINATION_WALLET),
+      new PublicKey(validator_address),
       parsedAmount * LAMPORTS_PER_SOL,
     );
     const response: ActionPostResponse = {
@@ -133,31 +146,48 @@ app.openapi(
   },
 );
 
-function getDonateInfo(): Pick<
+function getStakeInfo(baseURL: string): Pick<
   ActionGetResponse,
   'icon' | 'title' | 'description'
 > {
-  const icon =
-    'https://ucarecdn.com/7aa46c85-08a4-4bc7-9376-88ec48bb1f43/-/preview/880x864/-/quality/smart/-/format/auto/';
-  const title = 'Donate to Alice';
+  const icon = new URL("/static/Everstake.png", baseURL).toString();
+  const title = 'Stake SOL with Everstake, earn 7% APR';
   const description =
-    'Cybersecurity Enthusiast | Support my research with a donation.';
+    "Everstake, the biggest staking provider in the blockchain industry, trusted by 735,000+ users!";
   return { icon, title, description };
 }
-async function prepareDonateTransaction(
+
+async function prepareStakeTransaction(
   sender: PublicKey,
-  recipient: PublicKey,
+  validatorVoteAccount: PublicKey,
   lamports: number,
 ): Promise<VersionedTransaction> {
-  const payer = new PublicKey(sender);
-  const instructions = [
-    SystemProgram.transfer({
-      fromPubkey: payer,
-      toPubkey: new PublicKey(recipient),
-      lamports: lamports,
+  const stakeAccount = Keypair.generate();
+
+  // Calculate how much we want to stake
+    const minimumRent = await connection.getMinimumBalanceForRentExemption(
+      StakeProgram.space,
+  )
+
+  const tx = new Transaction().add(
+    ComputeBudgetProgram.setComputeUnitPrice({microLamports: 50}),
+    StakeProgram.createAccount({
+      authorized: new Authorized(sender, sender),
+      fromPubkey: sender,
+      lamports: lamports + minimumRent,
+      stakePubkey: stakeAccount.publicKey,
     }),
-  ];
-  return prepareTransaction(instructions, payer);
+    StakeProgram.delegate({
+      stakePubkey: stakeAccount.publicKey,
+      authorizedPubkey: sender,
+      votePubkey: validatorVoteAccount
+    })
+  );
+
+  let versionedTX = await prepareTransaction(tx.instructions, sender);
+  versionedTX.sign([stakeAccount]);
+
+  return versionedTX;
 }
 
 export default app;

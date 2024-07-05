@@ -1,6 +1,6 @@
-# @dialectlabs/actions
+# @everstake/actions
 
-This repository contains reference implementations of Solana Actions using [Hono](https://hono.dev/).
+This repository contains implementations of Evertake Solana Actions using [Hono](https://hono.dev/).
 
 ## Getting Started
 
@@ -9,10 +9,6 @@ First, run the development server:
 npm install
 npm run dev
 ```
-
-## Presets
-### Tensor Buy Floor
-* Place your api key to `TENSOR_API_KEY` constant in tensor-api.ts
 
 ## How To
 
