@@ -7,7 +7,7 @@
     "url": "https://github.com/everstake/actions"
   },
   "scripts": {
-    "dev": "tsx watch examples/index.ts"
+    "dev": "tsx watch actions/index.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.11.3",
