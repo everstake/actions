@@ -9,7 +9,18 @@ import { z } from "zod";
 var mime = require('mime-types')
 
 const app = new OpenAPIHono();
-app.use('/*', cors());
+
+app.use(
+   '/*',
+   cors({
+     origin: '*',
+     allowHeaders: ['Content-Type', 'Accept-Encoding', 'Authorization'],
+     allowMethods: ['POST', 'GET', 'OPTIONS'],
+     exposeHeaders: [],
+     maxAge: 600,
+     credentials: true,
+   })
+);
 
 // <--Actions-->
 app.route('/api/everstake/stake', everstake);
