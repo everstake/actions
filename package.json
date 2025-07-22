@@ -9,6 +9,13 @@
   "scripts": {
     "dev": "tsx watch actions/index.ts"
   },
+  "npm": {
+    "overrides": {
+      "base-x": "3.0.11",
+      "node-fetch": "2.6.7",
+      "cross-fetch": "3.1.5"
+    }
+  },
   "dependencies": {
     "@hono/node-server": "^1.11.3",
     "@hono/swagger-ui": "^0.3.0",
