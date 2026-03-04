@@ -15,7 +15,7 @@
     "cross-fetch": "3.1.5"
   },
   "dependencies": {
-    "@hono/node-server": "^1.11.3",
+    "@hono/node-server": "^1.19.10",
     "@hono/swagger-ui": "^0.3.0",
     "@hono/zod-openapi": "^0.14.5",
     "@solana/actions": "^1.0.2",
